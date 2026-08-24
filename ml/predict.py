@@ -1,22 +1,27 @@
+from pathlib import Path
+from typing import Mapping
+
 import joblib
 import pandas as pd
 
-FEATURES = [
-    "minimum_distance",
-    "relative_velocity",
-    "time_to_closest_approach",
-    "altitude",
-    "inclination_difference",
-    "eccentricity"
-]
+from .features import FEATURES
 
-model = joblib.load("models/risk_model.pkl")
+MODEL_PATH = Path(__file__).resolve().parent / "models" / "risk_model.pkl"
 
 
-def predict_risk(encounter):
-    data = pd.DataFrame([encounter])[FEATURES]
-
-    probability = model.predict_proba(data)[0][1]
+def predict_features(features: Mapping[str, float], *, model_path: Path = MODEL_PATH) -> dict[str, object]:
+    """Score a feature dictionary created by ``ml.features.build_features``."""
+    missing = [name for name in FEATURES if name not in features]
+    if missing:
+        raise ValueError(f"missing ML features: {', '.join(missing)}")
+    if not model_path.exists():
+        raise FileNotFoundError(f"trained model not found: {model_path}. Run `python -m ml.train_model` first.")
+    model = joblib.load(model_path)
+    data = pd.DataFrame([{name: features[name] for name in FEATURES}])
+    probabilities = model.predict_proba(data)[0]
+    classes = list(model.classes_)
+    positive_index = classes.index(1) if 1 in classes else classes.index("RISK")
+    probability = float(probabilities[positive_index])
 
     risk_score = round(probability * 100)
 
@@ -36,15 +41,4 @@ def predict_risk(encounter):
 
 if __name__ == "__main__":
 
-    encounter = {
-        "minimum_distance": 35,
-        "relative_velocity": 9.5,
-        "time_to_closest_approach": 12,
-        "altitude": 400,
-        "inclination_difference": 0.4,
-        "eccentricity": 0.08
-    }
-
-    result = predict_risk(encounter)
-
-    print(result)
+    print("Use predict_features() with the output of ml.features.build_features().")

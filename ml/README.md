@@ -4,7 +4,33 @@
 
 The ML part of **SpaceGuard-AI** is used to predict the collision risk between two space objects based on their orbital and close-approach information.
 
-The model takes different parameters related to the objects and gives a risk probability. This is then converted into a score out of 100 and classified as **Low, Medium, or High risk**.
+## Engine integration
+
+ML input is now produced by the project itself, rather than entered manually:
+
+```text
+orbit_engine (TLE -> propagated TEME states)
+    -> collision_engine (closest-approach event)
+    -> ml.features.build_features(...)
+    -> ml.predict.predict_features(...)
+```
+
+The end-to-end entry point is `ml.pipeline.analyze_tle_pair`. Its returned
+dictionary contains the collision result, the exact ML feature vector, and the
+ML prediction. The trained dataset must use these same columns:
+
+* `miss_distance_km`
+* `relative_velocity_km_s`
+* `time_to_tca_hours`
+* `object_a_altitude_km`
+* `object_b_altitude_km`
+* `altitude_difference_km`
+
+`ml/train_model.py` expects those columns plus the binary `risk` label. This
+keeps training and production inference on the same engine-derived schema.
+
+The model scores engine-derived features and returns a risk probability, a
+score out of 100, and a **LOW**, **MEDIUM**, or **HIGH** category.
 
 ## How It Works
 
@@ -26,7 +52,11 @@ Model Evaluation
 Risk Prediction
 ```
 
-The model mainly uses the following features:
+## Deprecated feature schema
+
+The following list belongs to the old synthetic prototype and is retained
+only for historical context. Do not use it for training or inference; use the
+six engine-derived fields in **Engine integration** instead.
 
 * `minimum_distance` — minimum distance between the two objects
 * `relative_velocity` — relative velocity between the objects
@@ -51,29 +81,21 @@ Random Forest was chosen because it works well with multiple numerical features 
 The trained model is saved as:
 
 ```text
-models/risk_model.pkl
+ml/models/risk_model.pkl
 ```
 
 ## Dataset
 
-The current model uses a synthetic dataset containing **1,000 records**.
-
-Each record represents a possible encounter between space objects and contains the orbital and collision-related parameters required by the model.
-
-The dataset is mainly being used for developing and testing the ML pipeline. One of the next steps would be replacing or combining it with real orbital data.
+Training data must contain one row per historical or simulated conjunction,
+using the current six feature columns plus `risk`. Generate those rows from
+the same orbit/collision pipeline used at inference time. The repository does
+not currently include a compatible training CSV or trained model artifact.
 
 ## Model Performance
 
-The current model gives approximately:
-
-| Metric           | Score |
-| ---------------- | ----: |
-| Accuracy         | 96.5% |
-| Precision (Risk) |   82% |
-| Recall (Risk)    |  100% |
-| F1-Score (Risk)  |   90% |
-
-The recall for the risk class is especially important here. In a collision-risk prediction system, detecting possible risky cases is more important than simply maximizing overall accuracy.
+No performance figure is claimed until a compatible dataset is supplied and
+the model is trained. Evaluate recall carefully before using it to screen
+potentially risky conjunctions.
 
 ## Project Structure
 
@@ -100,9 +122,11 @@ Loads the saved model and uses it to predict the risk for new input data.
 
 The output includes the risk probability, risk score, and risk level.
 
-### `evaluate_model.py`
+### `features.py` and `pipeline.py`
 
-Used to check how well the trained model performs using metrics such as accuracy, precision, recall, and F1-score.
+`features.py` converts orbit and collision outputs into the feature schema.
+`pipeline.py` propagates both objects concurrently, performs collision
+detection, and returns orbit, collision, feature, and prediction data together.
 
 ### `training_data.csv`
 
@@ -114,41 +138,22 @@ The saved trained Random Forest model.
 
 ## Running the ML Model
 
-First, create a virtual environment:
+From the project root, install the required libraries:
 
 ```bash
-python -m venv tfenv
-```
-
-Activate it on Windows:
-
-```bash
-tfenv\Scripts\activate
-```
-
-Then install the required libraries:
-
-```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python -m pip install -r ml/requirements.txt
 ```
 
 To train the model:
 
 ```bash
-python train_model.py
+python -m ml.train_model
 ```
 
-To evaluate it:
-
-```bash
-python evaluate_model.py
-```
-
-To make a prediction:
-
-```bash
-python predict.py
-```
+Use `ml.pipeline.analyze_tle_pair(...)` to run propagation, collision
+detection, feature extraction, and ML scoring together. A trained model must
+exist before the scoring step can run.
 
 ## Risk Score
 
