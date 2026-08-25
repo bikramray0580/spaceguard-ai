@@ -1,10 +1,16 @@
 #imported necessary libraries for data ingestion
 import json
-import re
 from datetime import datetime , timezone
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
+#change(2)-> added validation
+from validation import validate_tle_pair
+
+from database import (
+    create_tables,
+    insert_orbital_object
+)
 CELESTRAK_URL = (
     "https://celestrak.org/NORAD/elements/"
     "gp.php?GROUP=active&FORMAT=tle"
@@ -17,8 +23,15 @@ OBJECT_LIMIT = 10
 
 def fetch_tle_data():
     """Fetch the latest TLE data from CelesTrak."""
-    
-    with urlopen(CELESTRAK_URL, timeout=30) as response:
+
+    request = Request(
+        CELESTRAK_URL,
+        headers={
+            "User-Agent": "SpaceGuardAI/1.0"
+        }
+    )
+
+    with urlopen(request, timeout=30) as response:
         data = response.read().decode("utf-8")
 
     return data
@@ -42,10 +55,9 @@ def parse_tle_data(raw_data, limit=OBJECT_LIMIT):
         line2 = lines[i + 2]
 
         # Basic TLE structure validation
-        if not line1.startswith("1 "):
-            continue
-
-        if not line2.startswith("2 "):
+        is_valid, message = validate_tle_pair(line1, line2)
+        if not is_valid:
+            print(f"Rejected {name}: {message}")
             continue
 
         # Extract NORAD ID from both TLE lines
@@ -98,7 +110,7 @@ def parse_tle_epoch(line1):
 
 
 def save_json(objects):
-    """Save the processed orbital data."""
+    """Save the processed orbital data to JSON and SQLite."""
 
     fetched_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -108,13 +120,28 @@ def save_json(objects):
         "objects": objects
     }
 
+    # Create database table if it does not exist
+    create_tables()
+
+    # Store each validated object in the historical database
+    for obj in objects:
+        insert_orbital_object(
+            object_id=obj["object_id"],
+            name=obj["name"],
+            line1=obj["tle"]["line1"],
+            line2=obj["tle"]["line2"],
+            epoch=obj["epoch"],
+            source="CelesTrak",
+            fetched_at=fetched_at
+        )
+
+    # Save the latest snapshot as JSON
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
         json.dump(output, file, indent=2)
 
     print(f"Saved {len(objects)} objects to {OUTPUT_FILE}")
-
 
 def main():
     print("Fetching orbital data from CelesTrak...")
