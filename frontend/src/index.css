@@ -1,3 +1,167 @@
 @import 'tailwindcss';
 @import './styles/mission.css';
 @import './styles/orbital.css';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* SPACEGUARD DEFAULT THEME */
+:root {
+    --background: #050d1a;
+    --foreground: #d9f7fa;
+
+    --card: #071725;
+    --card-foreground: #d9f7fa;
+
+    --popover: #071725;
+    --popover-foreground: #d9f7fa;
+
+    --primary: #6ee7f5;
+    --primary-foreground: #031018;
+
+    --secondary: #0b2534;
+    --secondary-foreground: #bceff4;
+
+    --muted: #102532;
+    --muted-foreground: #7395a3;
+
+    --accent: #123441;
+    --accent-foreground: #6ee7f5;
+
+    --destructive: #ff7469;
+
+    --border: #173441;
+    --input: #102632;
+    --ring: #6ee7f5;
+
+    --chart-1: #6ee7f5;
+    --chart-2: #f3b85d;
+    --chart-3: #ff7469;
+    --chart-4: #67e8a5;
+    --chart-5: #8ca9ff;
+
+    --radius: 0.625rem;
+
+    --sidebar: #030b14;
+    --sidebar-foreground: #b9dbe0;
+    --sidebar-primary: #6ee7f5;
+    --sidebar-primary-foreground: #031018;
+    --sidebar-accent: #0b2937;
+    --sidebar-accent-foreground: #6ee7f5;
+    --sidebar-border: #122a36;
+    --sidebar-ring: #6ee7f5;
+}
+
+/* Keep shadcn's dark mode compatible with SpaceGuard */
+.dark {
+    --background: #050d1a;
+    --foreground: #d9f7fa;
+
+    --card: #071725;
+    --card-foreground: #d9f7fa;
+
+    --popover: #071725;
+    --popover-foreground: #d9f7fa;
+
+    --primary: #6ee7f5;
+    --primary-foreground: #031018;
+
+    --secondary: #0b2534;
+    --secondary-foreground: #bceff4;
+
+    --muted: #102532;
+    --muted-foreground: #7395a3;
+
+    --accent: #123441;
+    --accent-foreground: #6ee7f5;
+
+    --destructive: #ff7469;
+
+    --border: #173441;
+    --input: #102632;
+    --ring: #6ee7f5;
+
+    --chart-1: #6ee7f5;
+    --chart-2: #f3b85d;
+    --chart-3: #ff7469;
+    --chart-4: #67e8a5;
+    --chart-5: #8ca9ff;
+
+    --sidebar: #030b14;
+    --sidebar-foreground: #b9dbe0;
+    --sidebar-primary: #6ee7f5;
+    --sidebar-primary-foreground: #031018;
+    --sidebar-accent: #0b2937;
+    --sidebar-accent-foreground: #6ee7f5;
+    --sidebar-border: #122a36;
+    --sidebar-ring: #6ee7f5;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    html {
+        @apply font-sans;
+    }
+}
