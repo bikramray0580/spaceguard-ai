@@ -18,7 +18,7 @@ CELESTRAK_URL = (
 
 OUTPUT_FILE = Path(__file__).resolve().parent.parent / "data" / "orbital_data.json"
 
-OBJECT_LIMIT = 10
+OBJECT_LIMIT = 100
 
 
 def fetch_tle_data():
