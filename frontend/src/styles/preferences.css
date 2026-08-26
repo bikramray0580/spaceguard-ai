@@ -1,0 +1,672 @@
+/* =========================================================
+   Preferences
+   ========================================================= */
+
+.preferences-page {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Header */
+
+.preferences-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.preferences-header h1 {
+  margin: 4px 0 0;
+  color: #e4f4f6;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.preferences-header p {
+  margin: 6px 0 0;
+  color: #64828c;
+  font-size: 10px;
+}
+
+.preferences-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #1e4a52;
+  color: #71d9b0;
+  background: #07171e;
+  font: 8px ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #71d9b0;
+  box-shadow: 0 0 7px rgba(113, 217, 176, 0.35);
+}
+
+/* =========================================================
+   Main configuration layout
+   ========================================================= */
+
+.preferences-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+/* Workstation profile spans entire width */
+
+.workstation-profile {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border: 1px solid #193640;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(12, 39, 48, 0.45),
+      rgba(7, 21, 30, 0.95)
+    );
+}
+
+/* =========================================================
+   Workstation profile
+   ========================================================= */
+
+.workstation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 15px 12px;
+  border-bottom: 1px solid #18323d;
+}
+
+.workstation-header h2 {
+  margin: 4px 0 0;
+  color: #d9edf0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.workstation-header p {
+  margin: 4px 0 0;
+  color: #587782;
+  font-size: 8px;
+}
+
+.configuration-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #285343;
+  color: #72d9ae;
+  background: #0b1d18;
+  font: 7px ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.configuration-state > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #72d9ae;
+  box-shadow: 0 0 6px rgba(114, 217, 174, 0.4);
+}
+
+.configuration-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.configuration-group {
+  padding: 12px 14px;
+  border-right: 1px solid #18323d;
+}
+
+.configuration-group:last-child {
+  border-right: 0;
+}
+
+.configuration-group-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #68d5e3;
+  font: 7px ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+.configuration-group-title svg {
+  flex-shrink: 0;
+}
+
+.configuration-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 29px;
+  border-top: 1px solid #142c35;
+}
+
+.configuration-item span {
+  color: #5d7b85;
+  font-size: 7px;
+}
+
+.configuration-item strong {
+  color: #abc6cb;
+  font: 7px ui-monospace, monospace;
+  text-align: right;
+}
+
+.configuration-item .status-enabled {
+  color: #72d9ae;
+}
+
+.workstation-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 70px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-top: 1px solid #18323d;
+  background: #06131b;
+}
+
+.workstation-footer span {
+  color: #4f6e78;
+  font: 6px ui-monospace, monospace;
+  letter-spacing: 0.06em;
+}
+
+.workstation-footer strong {
+  color: #8eabb2;
+  font: 7px ui-monospace, monospace;
+}
+
+/* =========================================================
+   Panels
+   ========================================================= */
+
+.preferences-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #193440;
+  background: #07151e;
+}
+
+.preferences-panel:hover {
+  border-color: #234853;
+}
+
+.preferences-panel-header {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-height: 72px;
+  padding: 14px 15px 11px;
+  border-bottom: 1px solid #18323d;
+  background:
+    linear-gradient(
+      135deg,
+      #091a23,
+      #07151e
+    );
+}
+
+.preferences-title-icon {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid #27515c;
+  color: #67d7e5;
+  background: #0a2028;
+}
+
+.preferences-panel-header h2 {
+  margin: 4px 0 0;
+  color: #d9edf0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.preferences-panel-header p {
+  max-width: 500px;
+  margin: 4px 0 0;
+  color: #587782;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   Setting rows
+   ========================================================= */
+
+.settings-list {
+  display: grid;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 10px;
+  min-height: 65px;
+  padding: 9px 15px;
+  border-bottom: 1px solid #17303a;
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
+}
+
+.setting-row:hover {
+  background: #091b24;
+}
+
+.setting-icon {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid #24505a;
+  color: #67d7e5;
+  background: #0a2028;
+}
+
+.setting-icon.critical {
+  color: #ff7169;
+  border-color: #633331;
+  background: #251716;
+}
+
+.setting-icon.high {
+  color: #eaa548;
+  border-color: #62492a;
+  background: #211b11;
+}
+
+.setting-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.setting-copy strong {
+  color: #c8dfe3;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.setting-copy span {
+  overflow: hidden;
+  color: #5c7983;
+  font-size: 7px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Toggle
+   ========================================================= */
+
+.setting-toggle {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  padding: 2px;
+  border: 1px solid #294650;
+  border-radius: 10px;
+  background: #0a1a22;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.setting-toggle span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #526e77;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.setting-toggle:hover {
+  border-color: #39707a;
+}
+
+.setting-toggle.active {
+  border-color: #2b6a75;
+  background: #0b2b34;
+  box-shadow: 0 0 10px rgba(110, 220, 233, 0.08);
+}
+
+.setting-toggle.active span {
+  transform: translateX(14px);
+  background: #6edce9;
+  box-shadow: 0 0 6px rgba(110, 220, 233, 0.35);
+}
+
+/* =========================================================
+   Select controls
+   ========================================================= */
+
+.select-settings {
+  display: grid;
+}
+
+.select-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 15px;
+  min-height: 57px;
+  padding: 8px 15px;
+  border-bottom: 1px solid #17303a;
+}
+
+.select-setting:last-child {
+  border-bottom: 0;
+}
+
+.select-setting:hover {
+  background: #091b24;
+}
+
+.select-setting > span {
+  color: #9ab5bb;
+  font-size: 8px;
+}
+
+.select-setting select {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #25434d;
+  outline: 0;
+  color: #a9c5ca;
+  background: #091b24;
+  font: 7px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.select-setting select:hover,
+.select-setting select:focus {
+  border-color: #39707a;
+  box-shadow: 0 0 0 1px rgba(57, 112, 122, 0.15);
+}
+
+.select-setting option {
+  color: #a9c5ca;
+  background: #091b24;
+}
+
+/* =========================================================
+   Operator
+   ========================================================= */
+
+.operator-panel {
+  grid-column: 2;
+}
+
+.operator-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 13px 15px 10px;
+  padding: 11px;
+  border: 1px solid #1a3944;
+  background: #081922;
+}
+
+.operator-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #2a5c66;
+  color: #6edce9;
+  background: #0a2028;
+}
+
+.operator-identity {
+  display: grid;
+  gap: 3px;
+}
+
+.operator-identity span {
+  color: #55747e;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.operator-identity strong {
+  color: #d8ebee;
+  font: 600 10px ui-monospace, monospace;
+}
+
+.operator-identity small {
+  color: #64828c;
+  font-size: 7px;
+}
+
+.operator-active {
+  padding: 5px 7px;
+  border: 1px solid #285443;
+  color: #72d9ae;
+  background: #0b1d18;
+  font: 700 7px ui-monospace, monospace;
+}
+
+.operator-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0 15px 15px;
+  border: 1px solid #193640;
+}
+
+.operator-meta div {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-right: 1px solid #193640;
+  background: #071720;
+}
+
+.operator-meta div:last-child {
+  border-right: 0;
+}
+
+.operator-meta span {
+  color: #55747e;
+  font-size: 7px;
+}
+
+.operator-meta strong {
+  color: #bcd5da;
+  font: 8px ui-monospace, monospace;
+}
+
+/* =========================================================
+   System status
+   ========================================================= */
+
+.preferences-system {
+  grid-column: 1 / -1;
+
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+
+  padding: 12px 14px;
+  border: 1px solid #1b3b45;
+  background: #07161e;
+}
+
+.system-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #285343;
+  color: #72d9ae;
+  background: #0b1d18;
+}
+
+.preferences-system strong {
+  display: block;
+  margin-top: 3px;
+  color: #cde2e6;
+  font-size: 9px;
+}
+
+.preferences-system p {
+  margin: 3px 0 0;
+  color: #587782;
+  font-size: 7px;
+  line-height: 1.45;
+}
+
+.system-state {
+  padding: 5px 7px;
+  border: 1px solid #285343;
+  color: #72d9ae;
+  background: #0b1d18;
+  font: 7px ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1000px) {
+  .preferences-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workstation-profile,
+  .preferences-system,
+  .operator-panel {
+    grid-column: auto;
+  }
+
+  .operator-panel {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 800px) {
+  .configuration-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .configuration-group {
+    border-right: 0;
+    border-bottom: 1px solid #18323d;
+  }
+
+  .configuration-group:last-child {
+    border-bottom: 0;
+  }
+
+  .operator-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .operator-meta div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .operator-meta div:nth-child(-n + 2) {
+    border-bottom: 1px solid #193640;
+  }
+}
+
+@media (max-width: 700px) {
+  .preferences-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workstation-header {
+    flex-direction: column;
+  }
+
+  .preferences-system {
+    grid-template-columns: 34px 1fr;
+  }
+
+  .system-state {
+    grid-column: 2;
+    width: max-content;
+  }
+}
+
+@media (max-width: 520px) {
+  .setting-row {
+    grid-template-columns: 30px minmax(0, 1fr) 34px;
+    padding-inline: 11px;
+  }
+
+  .setting-copy span {
+    white-space: normal;
+  }
+
+  .select-setting {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding-block: 11px;
+  }
+
+  .select-setting select {
+    width: 100%;
+  }
+
+  .operator-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .operator-active {
+    grid-column: 2;
+    width: max-content;
+  }
+
+  .operator-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .operator-meta div,
+  .operator-meta div:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid #193640;
+  }
+
+  .operator-meta div:last-child {
+    border-bottom: 0;
+  }
+
+  .workstation-footer {
+    grid-template-columns: 1fr 1fr;
+  }
+}
