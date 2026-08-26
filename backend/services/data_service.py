@@ -1,7 +1,8 @@
 """Load and query space objects using the existing Data Engine."""
  
 import json
-from data_engine.database import create_tables, get_latest_orbital_data
+from data_engine.data_service import get_current_objects
+from data_engine.database import create_tables
 from ..config import DATA_FILE
 from ..models.object import SpaceObject
  
@@ -10,25 +11,17 @@ class ObjectNotFoundError(LookupError):
     """Raised when an object_id is not present in the orbital data."""
  
 def _objects_from_data_engine() -> list[SpaceObject]:
-    """Load the latest records from the Data Engine's SQLite store."""
+    """Load the latest records through the Data Engine service layer."""
     create_tables()
     return [
         SpaceObject(
-            object_id=object_id,
-            name=name,
-            line1=tle_line1,
-            line2=tle_line2,
-            epoch=epoch,
+            object_id=obj["object_id"],
+            name=obj["name"],
+            line1=obj["tle_line1"],
+            line2=obj["tle_line2"],
+            epoch=obj["epoch"],
         )
-        for (
-            object_id,
-            name,
-            tle_line1,
-            tle_line2,
-            epoch,
-            _source,
-            _fetched_at,
-        ) in get_latest_orbital_data()
+        for obj in get_current_objects()
     ]
  
  
