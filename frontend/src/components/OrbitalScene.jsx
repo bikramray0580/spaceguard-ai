@@ -8,9 +8,9 @@ import {
 } from '../data/mockOrbitalData'
 
 const colors = {
-  normal: '#6ee7f5',
-  elevated: '#f3b85d',
-  critical: '#ff7469',
+  normal: '#b7d7ff',
+  elevated: '#e5a25c',
+  critical: '#ef604e',
 }
 
 const axis = new THREE.Vector3(1, 0, 0)
@@ -140,71 +140,19 @@ function createNightEarthTexture() {
 }
 
 function Earth() {
-  const texture = useMemo(
-    () => createNightEarthTexture(),
-    [],
-  )
-
-  return (
-    <group rotation={[0.08, -0.45, 0.12]}>
-      <mesh>
-        <sphereGeometry
-          args={[1.72, 64, 64]}
-        />
-
-        <meshStandardMaterial
-          map={texture}
-          color="#d3f2e8"
-          roughness={0.72}
-          metalness={0.1}
-          emissive="#0b3643"
-          emissiveIntensity={0.58}
-        />
-      </mesh>
-
-      <mesh scale={1.035}>
-        <sphereGeometry
-          args={[1.72, 64, 64]}
-        />
-
-        <meshBasicMaterial
-          color="#58e0ee"
-          transparent
-          opacity={0.14}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-
-      <mesh
-        rotation={[0.15, 0.45, 0]}
-        scale={1.006}
-      >
-        <sphereGeometry
-          args={[1.72, 48, 48]}
-        />
-
-        <meshBasicMaterial
-          color="#75dae4"
-          wireframe
-          transparent
-          opacity={0.018}
-        />
-      </mesh>
-
-      <directionalLight
-        color="#c7f8e5"
-        intensity={2.15}
-        position={[4.5, 3.2, 4.8]}
-      />
-
-      <directionalLight
-        color="#2b98bc"
-        intensity={0.42}
-        position={[-4, -1, -3]}
-      />
-    </group>
-  )
+  const cloudRef = useRef()
+  const earthMaterial = useMemo(() => new THREE.ShaderMaterial({ uniforms:{sun:{value:new THREE.Vector3(1.2,.65,1).normalize()}}, vertexShader:`varying vec2 u;varying vec3 n;void main(){u=uv;n=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`, fragmentShader:`varying vec2 u;varying vec3 n;uniform vec3 sun;float h(vec2 p){return fract(sin(dot(p,vec2(41.7,289.3)))*43758.5);}float no(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}float fb(vec2 p){float v=0.;for(int i=0;i<5;i++){v+=no(p)*.5;p=p*2.02+4.7;}return v;}float b(vec2 p,vec2 c,vec2 r){vec2 d=(p-c)/r;return 1.-smoothstep(.48,1.12,dot(d,d));}void main(){vec2 p=vec2(fract(u.x+.04),u.y);float masses=max(max(b(p,vec2(.55,.58),vec2(.15,.19)),b(p,vec2(.71,.66),vec2(.24,.12))),max(b(p,vec2(.25,.53),vec2(.1,.21)),b(p,vec2(.44,.31),vec2(.08,.16))));float land=smoothstep(.43,.62,masses+(fb(p*8.)-.5)*.52);float relief=fb(p*34.);vec3 ocean=vec3(.006,.018,.052)+vec3(.012,.038,.09)*relief;vec3 ground=mix(vec3(.035,.065,.055),vec3(.19,.15,.09),relief);vec3 base=mix(ocean,ground,land);float nd=max(dot(normalize(n),sun),0.);float night=smoothstep(.27,-.22,dot(normalize(n),sun));float cities=step(.985,h(floor(p*vec2(220.,120.))))*land*night;vec3 color=base*(.035+.95*nd)+vec3(1.,.38,.08)*cities*.8;gl_FragColor=vec4(color,1.);}`}), [])
+  const cloudMaterial = useMemo(() => new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{time:{value:0}},vertexShader:`varying vec2 u;void main(){u=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec2 u;uniform float time;float h(vec2 p){return fract(sin(dot(p,vec2(12.3,77.1)))*43758.5);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}void main(){float c=smoothstep(.73,.85,n(vec2(u.x*10.+time*.003,u.y*17.)));gl_FragColor=vec4(vec3(.55,.68,.78),c*.13);}`}), [])
+  // Final albedo calibration: cooler oceans, desaturated vegetation, and sparse urban emission.
+  // Kept as shader text so the Earth remains fully procedural and editable.
+  earthMaterial.fragmentShader = earthMaterial.fragmentShader
+    .replace('vec3 ocean=vec3(.006,.018,.052)+vec3(.012,.038,.09)*relief;', 'vec3 ocean=mix(vec3(.003,.012,.038),vec3(.018,.075,.15),relief);')
+    .replace('vec3 ground=mix(vec3(.035,.065,.055),vec3(.19,.15,.09),relief);', 'vec3 ground=mix(vec3(.018,.055,.035),vec3(.105,.115,.062),relief);')
+    .replace('float night=smoothstep(.27,-.22,dot(normalize(n),sun));', 'float night=smoothstep(.38,-.28,dot(normalize(n),sun));')
+    .replace('step(.985,h(floor(p*vec2(220.,120.))))', 'step(.994,h(floor(p*vec2(260.,140.))))')
+  earthMaterial.needsUpdate = true
+  useFrame(({clock})=>{if(cloudRef.current)cloudRef.current.material.uniforms.time.value=clock.getElapsedTime()})
+  return <group rotation={[.08,-.45,.12]}><mesh><sphereGeometry args={[1.72,128,96]}/><primitive object={earthMaterial} attach="material"/></mesh><mesh ref={cloudRef} scale={1.008}><sphereGeometry args={[1.72,128,96]}/><primitive object={cloudMaterial} attach="material"/></mesh><mesh scale={1.035}><sphereGeometry args={[1.72,128,96]}/><shaderMaterial transparent depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} vertexShader="varying vec3 n;varying vec3 v;void main(){n=normalize(normalMatrix*normal);v=normalize((modelViewMatrix*vec4(position,1.)).xyz);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec3 n;varying vec3 v;void main(){float r=pow(1.-abs(dot(n,-v)),4.6);gl_FragColor=vec4(vec3(.08,.34,.82)*r,r*.48);}"/></mesh></group>
 }
 
 function OrbitPath({ object, active }) {
@@ -247,10 +195,10 @@ function OrbitPath({ object, active }) {
           color={
             active
               ? colors[object.risk]
-              : '#33a8bf'
+              : '#4c80bd'
           }
           transparent
-          opacity={active ? 0.96 : 0.42}
+          opacity={active ? 0.62 : 0.13}
         />
       </line>
 
@@ -268,7 +216,7 @@ function OrbitPath({ object, active }) {
           <lineBasicMaterial
             color={colors[object.risk]}
             transparent
-            opacity={0.25}
+            opacity={0.08}
           />
         </line>
       )}
@@ -335,7 +283,7 @@ function Marker({
       >
         <sphereGeometry
           args={[
-            active ? 0.135 : 0.092,
+            active ? 0.098 : 0.05,
             16,
             16,
           ]}
@@ -347,7 +295,7 @@ function Marker({
       {active && (
         <mesh ref={halo}>
           <sphereGeometry
-            args={[0.16, 16, 16]}
+            args={[0.13, 16, 16]}
           />
 
           <meshBasicMaterial
@@ -427,7 +375,7 @@ function ConjunctionIndicator({ objects }) {
       <group ref={beacon}>
         <mesh>
           <sphereGeometry
-            args={[0.11, 16, 16]}
+          args={[0.08, 16, 16]}
           />
 
           <meshBasicMaterial
@@ -691,8 +639,8 @@ export default function OrbitalScene(
     <Canvas
       className="orbital-canvas-root"
       camera={{
-        position: [7.4, 5.5, 8.5],
-        fov: 41,
+        position: [6.1, 4.5, 6.9],
+        fov: 38,
       }}
       dpr={[1, 1.7]}
     >
