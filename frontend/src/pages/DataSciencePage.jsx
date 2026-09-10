@@ -1,35 +1,65 @@
 import {
   Activity,
+  ArrowRight,
+  BarChart3,
   Database,
+  Gauge,
   Radar,
   ShieldAlert,
+  Sparkles,
   Target,
+  X,
   Zap,
-  TrendingUp,
 } from 'lucide-react'
-import { mockThreats } from '../data/mockMissionData'
-import '../styles/dataScience.css'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { mockMissionMeta, mockThreats } from '../data/mockMissionData'
+import '../styles/datascience.css'
 
-const OBJECT_COUNT = 142
+const OBJECT_COUNT = mockMissionMeta.monitoredObjects
 
-// Count threats by severity.
-const threatCounts = {
-  CRITICAL: mockThreats.filter(
-    (item) => item.level === 'CRITICAL',
-  ).length,
-  HIGH: mockThreats.filter(
-    (item) => item.level === 'HIGH',
-  ).length,
-  MODERATE: mockThreats.filter(
-    (item) => item.level === 'MODERATE',
-  ).length,
-  LOW: mockThreats.filter(
-    (item) => item.level === 'LOW',
-  ).length,
+const RISK_ORDER = ['CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'NORMAL']
+
+const RISK_META = {
+  CRITICAL: {
+    label: 'Critical',
+    tone: 'critical',
+  },
+  HIGH: {
+    label: 'High',
+    tone: 'high',
+  },
+  MODERATE: {
+    label: 'Moderate',
+    tone: 'moderate',
+  },
+  LOW: {
+    label: 'Low',
+    tone: 'low',
+  },
+  NORMAL: {
+    label: 'Normal',
+    tone: 'normal',
+  },
 }
 
-// Most objects are outside the active threat list.
-const normalCount = Math.max(
+const ANALYSIS_TABS = [
+  { id: 'overview', label: 'Overview', icon: Radar },
+  { id: 'risk', label: 'Risk', icon: ShieldAlert },
+  { id: 'conjunctions', label: 'Conjunctions', icon: Target },
+  { id: 'velocity', label: 'Velocity', icon: Zap },
+  { id: 'telemetry', label: 'Telemetry', icon: Activity },
+]
+
+const threatCounts = RISK_ORDER.reduce((accumulator, level) => {
+  accumulator[level] =
+    level === 'NORMAL'
+      ? 0
+      : mockThreats.filter((item) => item.level === level).length
+  return accumulator
+}, {})
+
+threatCounts.NORMAL = Math.max(
   0,
   OBJECT_COUNT -
     threatCounts.CRITICAL -
@@ -38,8 +68,8 @@ const normalCount = Math.max(
     threatCounts.LOW,
 )
 
-const elevatedCount =
-  threatCounts.CRITICAL + threatCounts.HIGH
+const attentionCount = threatCounts.CRITICAL + threatCounts.HIGH
+const nominalShare = ((threatCounts.NORMAL / OBJECT_COUNT) * 100).toFixed(1)
 
 const sortedThreats = [...mockThreats].sort(
   (a, b) =>
@@ -47,398 +77,650 @@ const sortedThreats = [...mockThreats].sort(
     Number.parseFloat(b.distance),
 )
 
-export default function DataSciencePage() {
-  const closestThreat = sortedThreats[0]
+const parseNumber = (value) =>
+  Number.parseFloat(String(value).replace(/[^0-9.-]/g, '')) || 0
 
-  if (!closestThreat) {
-    return (
-      <section className="data-science-page">
-        <div className="ds-empty-state">
-          <span className="eyebrow">MISSION INTELLIGENCE</span>
-          <h1>Data Science</h1>
-          <p>No conjunction data is currently available.</p>
-        </div>
-      </section>
-    )
+const highestRiskThreat = sortedThreats.find(
+  (threat) => threat.level === 'CRITICAL',
+) ?? sortedThreats[0]
+
+function formatObject(value) {
+  return value
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (match) => match.toUpperCase())
+}
+
+function severityLabel(level) {
+  return RISK_META[level]?.label ?? level
+}
+
+export default function DataSciencePage() {
+  const [activeTab, setActiveTab] = useState('overview')
+  const [selectedThreatId, setSelectedThreatId] = useState(null)
+  const [showInsights, setShowInsights] = useState(false)
+  const searchRef = useRef(null)
+
+  const selectedThreat = useMemo(
+    () =>
+      mockThreats.find((threat) => threat.id === selectedThreatId) ?? null,
+    [selectedThreatId],
+  )
+
+  const handleSelectThreat = (threat) => {
+    setSelectedThreatId(threat.id)
   }
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        event.preventDefault()
+        searchRef.current?.focus()
+      }
+
+      if (event.key === 'Escape') {
+        setSelectedThreatId(null)
+        setShowInsights(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <section className="data-science-page">
-      {/* Page header */}
-      <header className="ds-header">
-        <div>
-          <span className="eyebrow">MISSION INTELLIGENCE</span>
-          <h1>Data Science</h1>
+      <header className="ds-page-header">
+        <div className="ds-header-copy">
+          <span className="ds-eyebrow">MISSION INTELLIGENCE</span>
+          <h1>Data analysis</h1>
           <p>
-            Turn orbital data into clear, actionable mission insights.
+            Understand the monitored orbital environment without digging through
+            every metric at once.
           </p>
         </div>
 
-        <div className="ds-status">
-          <span className="status-dot" />
-          ANALYTICS ENGINE ONLINE
+        <div className="ds-live-status">
+          <span className="ds-live-dot" />
+          <span>LIVE DATASET</span>
+          <small>{mockMissionMeta.freshness} refresh</small>
         </div>
       </header>
 
-      {/* Mission KPIs */}
-      <section className="ds-kpis">
-        <KpiCard
-          icon={<Database size={17} />}
-          label="OBJECTS MONITORED"
-          value={OBJECT_COUNT}
-          detail="tracked in current dataset"
-        />
-
-        <KpiCard
-          icon={<Radar size={17} />}
-          label="CLOSE APPROACHES"
-          value={mockThreats.length}
-          detail="potential conjunction events"
-        />
-
-        <KpiCard
-          icon={<ShieldAlert size={17} />}
-          label="ELEVATED ATTENTION"
-          value={elevatedCount}
-          detail="high or critical priority"
-          tone="warning"
-        />
-
-        <KpiCard
-          icon={<Activity size={17} />}
-          label="DATA STATUS"
-          value="LIVE"
-          detail="analytics pipeline active"
-          tone="live"
-        />
-      </section>
-
-      {/* Primary analytics */}
-      <section className="ds-main-grid">
-        {/* Risk distribution */}
-        <div className="ds-panel risk-panel">
-          <PanelHeader
-            eyebrow="RISK DISTRIBUTION"
-            title="Monitoring posture"
-            description="How the monitored object population is distributed by risk."
-          />
-
-          <div className="risk-content">
-            <div className="risk-ring">
-              <div className="risk-ring-inner">
-                <strong>{OBJECT_COUNT}</strong>
-                <span>OBJECTS</span>
-              </div>
-            </div>
-
-            <div className="risk-breakdown">
-              <RiskRow
-                label="Critical"
-                count={threatCounts.CRITICAL}
-                tone="critical"
-                total={OBJECT_COUNT}
-              />
-
-              <RiskRow
-                label="High"
-                count={threatCounts.HIGH}
-                tone="high"
-                total={OBJECT_COUNT}
-              />
-
-              <RiskRow
-                label="Moderate"
-                count={threatCounts.MODERATE}
-                tone="moderate"
-                total={OBJECT_COUNT}
-              />
-
-              <RiskRow
-                label="Low"
-                count={threatCounts.LOW}
-                tone="low"
-                total={OBJECT_COUNT}
-              />
-
-              <RiskRow
-                label="Normal"
-                count={normalCount}
-                tone="normal"
-                total={OBJECT_COUNT}
-              />
-            </div>
-          </div>
-
-          <div className="risk-message">
-            <div>
-              <strong>{normalCount} of {OBJECT_COUNT} objects</strong>
-              <span>remain within normal monitoring levels.</span>
-            </div>
-
-            <div>
-              <strong className="warning-text">
-                {elevatedCount} require attention
-              </strong>
-              <span>because they are high or critical priority.</span>
-            </div>
-          </div>
+      <section className="ds-snapshot" aria-label="Dataset snapshot">
+        <div className="ds-snapshot-label">
+          <span className="ds-eyebrow">DATASET SNAPSHOT</span>
+          <strong>Current monitoring posture</strong>
         </div>
 
-        {/* Risk concentration */}
-        <div className="ds-panel orbital-panel">
-          <PanelHeader
-            eyebrow="RISK CONCENTRATION"
-            title="Where attention is focused"
-            description="A simplified view of current conjunction pressure."
+        <div className="ds-snapshot-metrics">
+          <SnapshotMetric
+            label="Objects monitored"
+            value={OBJECT_COUNT}
+            detail="current dataset"
           />
-
-          <div className="orbital-map">
-            <div className="map-grid" />
-
-            <div className="map-axis y-axis">HIGH RISK</div>
-            <div className="map-axis x-axis">LOWER ACTIVITY</div>
-
-            {/* Plot threat points */}
-            {mockThreats.map((threat, index) => (
-              <div
-                key={threat.id}
-                className={`map-point ${threat.level.toLowerCase()}`}
-                style={{
-                  '--point-x': `${16 + ((index * 21) % 72)}%`,
-                  '--point-y': `${18 + ((index * 27) % 62)}%`,
-                }}
-                title={`${threat.objectA} × ${threat.objectB}`}
-              />
-            ))}
-
-            <div className="map-focus">
-              <div className="focus-heading">
-                <Target size={15} />
-                <div>
-                  <span>HIGHEST PRIORITY</span>
-                  <strong>
-                    {closestThreat.objectA} × {closestThreat.objectB}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="focus-values">
-                <div>
-                  <small>MISS DISTANCE</small>
-                  <strong>{closestThreat.distance}</strong>
-                </div>
-
-                <div>
-                  <small>REL. VELOCITY</small>
-                  <strong>{closestThreat.velocity}</strong>
-                </div>
-
-                <div>
-                  <small>TCA</small>
-                  <strong>
-                    {closestThreat.window.replace('TCA ', '')}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Closest approaches */}
-        <div className="ds-panel approaches-panel">
-          <PanelHeader
-            eyebrow="CONJUNCTION ANALYSIS"
-            title="Closest approaches"
-            description="Current encounters ranked by predicted miss distance."
+          <span className="ds-snapshot-divider" />
+          <SnapshotMetric
+            label="Active conjunctions"
+            value={mockThreats.length}
+            detail="screened events"
           />
-
-          <div className="approach-list">
-            {sortedThreats.map((threat, index) => (
-              <div className="approach-row" key={threat.id}>
-                <div className="approach-rank">
-                  {String(index + 1).padStart(2, '0')}
-                </div>
-
-                <div className="approach-info">
-                  <div className="approach-top">
-                    <strong>
-                      {threat.objectA}
-                      <span> × </span>
-                      {threat.objectB}
-                    </strong>
-
-                    <b className={threat.level.toLowerCase()}>
-                      {threat.level}
-                    </b>
-                  </div>
-
-                  <div className="approach-bar">
-                    <span
-                      className={threat.level.toLowerCase()}
-                      style={{
-                        width: `${Math.max(
-                          18,
-                          100 -
-                            Number.parseFloat(threat.distance) * 4,
-                        )}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="approach-bottom">
-                    <span>{threat.window}</span>
-                    <span>Relative velocity: {threat.velocity}</span>
-                  </div>
-                </div>
-
-                <div className="approach-distance">
-                  {threat.distance}
-                </div>
-              </div>
-            ))}
-          </div>
+          <span className="ds-snapshot-divider" />
+          <SnapshotMetric
+            label="Need attention"
+            value={attentionCount}
+            detail="high or critical"
+            tone="attention"
+          />
         </div>
       </section>
 
-      {/* Secondary analytics */}
-      <section className="ds-bottom-grid">
-        {/* Scatter view */}
-        <div className="ds-panel scatter-panel">
-          <PanelHeader
-            eyebrow="VELOCITY ANALYSIS"
-            title="Velocity vs miss distance"
-            description="Higher velocity and shorter distance indicate greater monitoring pressure."
-          />
-
-          <div className="scatter-chart">
-            <span className="chart-y-label">RELATIVE VELOCITY</span>
-            <span className="chart-x-label">MISS DISTANCE</span>
-            <div className="chart-grid" />
-
-            {mockThreats.map((threat, index) => (
-              <span
-                key={threat.id}
-                className={`scatter-point ${threat.level.toLowerCase()}`}
-                style={{
-                  left: `${12 + index * 21}%`,
-                  bottom: `${18 + (index % 4) * 16}%`,
-                }}
-                title={`${threat.objectA} × ${threat.objectB}`}
-              />
-            ))}
-
-            <div className="scatter-focus">
-              <span>HIGHEST PRIORITY</span>
-              <strong>
-                {closestThreat.objectA} × {closestThreat.objectB}
-              </strong>
-              <small>
-                {closestThreat.distance} miss distance • {closestThreat.velocity}
-              </small>
-            </div>
-          </div>
+      <section className="ds-insight">
+        <div className="ds-insight-icon">
+          <Sparkles size={17} />
         </div>
 
-        {/* Insights */}
-        <div className="ds-panel insights-panel">
-          <PanelHeader
-            eyebrow="DATA INSIGHTS"
-            title="What the data tells us"
-            description="Plain-language interpretation of the current dataset."
-          />
-
-          <div className="insight-grid">
-            <Insight
-              number="01"
-              icon={<Target size={16} />}
-              title="Closest approach"
-              text={`${closestThreat.objectA} and ${closestThreat.objectB} have the smallest predicted miss distance at ${closestThreat.distance}.`}
-            />
-
-            <Insight
-              number="02"
-              icon={<Zap size={16} />}
-              title="Fastest encounter"
-              text={`The highest-priority encounter has a relative velocity of ${closestThreat.velocity}.`}
-            />
-
-            <Insight
-              number="03"
-              icon={<ShieldAlert size={16} />}
-              title="Attention required"
-              text={`${elevatedCount} detected pair${elevatedCount !== 1 ? 's' : ''} currently sit above normal risk thresholds.`}
-            />
-
-            <Insight
-              number="04"
-              icon={<TrendingUp size={16} />}
-              title="Overall picture"
-              text={`${normalCount} of ${OBJECT_COUNT} monitored objects remain within normal operating levels.`}
-            />
-          </div>
+        <div className="ds-insight-copy">
+          <span className="ds-eyebrow">KEY INSIGHT</span>
+          <h2>
+            Most monitored objects remain nominal, while attention is concentrated
+            in a small number of active conjunctions.
+          </h2>
+          <p>
+            {nominalShare}% of the monitored population is currently outside
+            the active high/critical threat set.
+          </p>
         </div>
+
+        <button
+          type="button"
+          className="ds-insight-action"
+          onClick={() => setShowInsights((current) => !current)}
+          aria-expanded={showInsights}
+        >
+          {showInsights ? 'Hide insights' : 'More insights'}
+          <ArrowRight size={14} />
+        </button>
       </section>
+
+      {showInsights && (
+        <section className="ds-extra-insights" aria-label="Additional insights">
+          <InsightLine
+            icon={<Target size={15} />}
+            title="Closest encounter"
+            value={`${highestRiskThreat.distance}`}
+            detail={`${formatObject(highestRiskThreat.objectA)} × ${formatObject(highestRiskThreat.objectB)}`}
+          />
+          <InsightLine
+            icon={<Zap size={15} />}
+            title="Fastest encounter"
+            value={highestRiskThreat.velocity}
+            detail="relative velocity in current conjunction set"
+          />
+          <InsightLine
+            icon={<ShieldAlert size={15} />}
+            title="Highest severity"
+            value={highestRiskThreat.level}
+            detail={RISK_META[highestRiskThreat.level].label + ' monitoring priority'}
+            tone={RISK_META[highestRiskThreat.level].tone}
+          />
+        </section>
+      )}
+
+      <nav className="ds-analysis-tabs" aria-label="Analysis views">
+        {ANALYSIS_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            type="button"
+            key={id}
+            className={activeTab === id ? 'active' : ''}
+            onClick={() => {
+              setActiveTab(id)
+              setSelectedThreatId(null)
+            }}
+            aria-current={activeTab === id ? 'page' : undefined}
+          >
+            <Icon size={14} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <main className="ds-analysis-stage">
+        {activeTab === 'overview' && (
+          <OverviewView
+            searchRef={searchRef}
+            onSelectThreat={handleSelectThreat}
+          />
+        )}
+
+        {activeTab === 'risk' && (
+          <RiskView
+            onSelectThreat={handleSelectThreat}
+          />
+        )}
+
+        {activeTab === 'conjunctions' && (
+          <ConjunctionView
+            onSelectThreat={handleSelectThreat}
+          />
+        )}
+
+        {activeTab === 'velocity' && (
+          <VelocityView
+            onSelectThreat={handleSelectThreat}
+          />
+        )}
+
+        {activeTab === 'telemetry' && <TelemetryView />}
+      </main>
+
+      {selectedThreat && (
+        <ThreatInsightDrawer
+          threat={selectedThreat}
+          onClose={() => setSelectedThreatId(null)}
+        />
+      )}
     </section>
   )
 }
 
-/* Reusable KPI card */
-function KpiCard({ icon, label, value, detail, tone = '' }) {
+function SnapshotMetric({ label, value, detail, tone = '' }) {
   return (
-    <article className={`ds-kpi ${tone}`}>
-      <div className="ds-kpi-icon">{icon}</div>
+    <div className={`ds-snapshot-metric ${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  )
+}
 
+function InsightLine({ icon, title, value, detail, tone = '' }) {
+  return (
+    <article className={`ds-insight-line ${tone}`}>
+      <span className="ds-insight-line-icon">{icon}</span>
       <div>
-        <span>{label}</span>
+        <span>{title}</span>
         <strong>{value}</strong>
-        <small>{detail}</small>
       </div>
+      <small>{detail}</small>
     </article>
   )
 }
 
-/* Panel heading */
-function PanelHeader({ eyebrow, title, description }) {
+function PanelHeading({ eyebrow, title, description, action }) {
   return (
-    <div className="ds-panel-header">
+    <header className="ds-panel-heading">
       <div>
-        <span className="eyebrow">{eyebrow}</span>
+        <span className="ds-eyebrow">{eyebrow}</span>
         <h2>{title}</h2>
-        <p>{description}</p>
+        {description && <p>{description}</p>}
+      </div>
+      {action}
+    </header>
+  )
+}
+
+function OverviewView({ onSelectThreat }) {
+  return (
+    <section className="ds-view-shell">
+      <div className="ds-primary-grid">
+        <article className="ds-analysis-panel ds-primary-panel">
+          <PanelHeading
+            eyebrow="PRIMARY ANALYSIS"
+            title="Monitoring posture"
+            description="Most monitored objects remain outside the active threat set."
+          />
+          <RiskDistribution />
+        </article>
+
+        <article className="ds-analysis-panel ds-focus-panel">
+          <PanelHeading
+            eyebrow="KEY PATTERN"
+            title="Where attention is focused"
+            description="A lightweight view of the current conjunction pressure."
+          />
+          <ConcentrationChart />
+        </article>
+      </div>
+
+      <article className="ds-analysis-panel ds-conjunction-preview">
+        <PanelHeading
+          eyebrow="NEXT TO EXPLORE"
+          title="Closest active approaches"
+          description="Select an event to inspect its supporting data."
+          action={
+            <span className="ds-panel-count">
+              {mockThreats.length} events
+            </span>
+          }
+        />
+        <ThreatPreviewList onSelectThreat={onSelectThreat} />
+      </article>
+    </section>
+  )
+}
+
+function RiskView({ onSelectThreat }) {
+  return (
+    <section className="ds-view-shell">
+      <article className="ds-analysis-panel ds-wide-panel">
+        <PanelHeading
+          eyebrow="RISK ANALYSIS"
+          title="Risk distribution"
+          description="See how the monitored population is distributed by current screening status."
+        />
+        <RiskDistribution detailed />
+      </article>
+
+      <div className="ds-secondary-grid">
+        <article className="ds-analysis-panel">
+          <PanelHeading
+            eyebrow="ATTENTION"
+            title="Priority objects"
+            description="The smallest margin events in the current dataset."
+          />
+          <ThreatPreviewList onSelectThreat={onSelectThreat} compact />
+        </article>
+
+        <article className="ds-analysis-panel">
+          <PanelHeading
+            eyebrow="INTERPRETATION"
+            title="Why the distribution matters"
+            description="Keep the analytical result human-readable."
+          />
+          <div className="ds-explanation">
+            <div className="ds-explanation-stat">
+              <strong>{nominalShare}%</strong>
+              <span>nominal population</span>
+            </div>
+            <p>
+              The active high and critical set is a small subset of the monitored
+              population. That makes targeted review more useful than treating
+              every object as equally urgent.
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+  )
+}
+
+function ConjunctionView({ onSelectThreat }) {
+  return (
+    <section className="ds-view-shell">
+      <article className="ds-analysis-panel ds-wide-panel">
+        <PanelHeading
+          eyebrow="CONJUNCTIONS"
+          title="Closest approaches"
+          description="Sort by predicted miss distance so the most important encounters rise to the top."
+        />
+        <div className="ds-conjunction-list">
+          {sortedThreats.map((threat, index) => (
+            <button
+              type="button"
+              key={threat.id}
+              className="ds-conjunction-row"
+              onClick={() => onSelectThreat(threat)}
+            >
+              <span className="ds-rank">{String(index + 1).padStart(2, '0')}</span>
+              <span className={`ds-row-severity ${threat.level.toLowerCase()}`} />
+              <span className="ds-conjunction-main">
+                <strong>
+                  {formatObject(threat.objectA)}
+                  <span> × </span>
+                  {formatObject(threat.objectB)}
+                </strong>
+                <small>{threat.window}</small>
+              </span>
+              <span className="ds-conjunction-stat">
+                <small>Miss distance</small>
+                <strong>{threat.distance}</strong>
+              </span>
+              <span className={`ds-small-status ${threat.level.toLowerCase()}`}>
+                {severityLabel(threat.level)}
+              </span>
+              <ArrowRight size={15} />
+            </button>
+          ))}
+        </div>
+      </article>
+
+      <article className="ds-analysis-panel ds-wide-panel ds-guidance-panel">
+        <span className="ds-eyebrow">ANALYST GUIDANCE</span>
+        <h2>Start with the smallest miss distance.</h2>
+        <p>
+          Use the closest-approach list as your first pass, then open an event
+          to see its risk and timing context. The page avoids showing every
+          technical parameter until you ask for it.
+        </p>
+      </article>
+    </section>
+  )
+}
+
+function VelocityView({ onSelectThreat }) {
+  const maxVelocity = Math.max(...mockThreats.map((threat) => parseNumber(threat.velocity)), 1)
+  const maxDistance = Math.max(...mockThreats.map((threat) => parseNumber(threat.distance)), 1)
+
+  return (
+    <section className="ds-view-shell">
+      <article className="ds-analysis-panel ds-wide-panel">
+        <PanelHeading
+          eyebrow="VELOCITY ANALYSIS"
+          title="Velocity vs miss distance"
+          description="Higher velocity combined with a shorter miss distance can increase monitoring pressure."
+        />
+
+        <div className="ds-scatter-chart" role="img" aria-label="Velocity versus miss distance">
+          <div className="ds-scatter-grid" />
+          <span className="ds-chart-label ds-chart-y">RELATIVE VELOCITY</span>
+          <span className="ds-chart-label ds-chart-x">MISS DISTANCE</span>
+
+          {mockThreats.map((threat) => {
+            const x = 14 + (parseNumber(threat.distance) / maxDistance) * 70
+            const y = 16 + (parseNumber(threat.velocity) / maxVelocity) * 66
+
+            return (
+              <button
+                type="button"
+                key={threat.id}
+                className={`ds-scatter-point ${threat.level.toLowerCase()}`}
+                style={{ left: `${x}%`, bottom: `${y}%` }}
+                onClick={() => onSelectThreat(threat)}
+                aria-label={`${formatObject(threat.objectA)} by ${formatObject(threat.objectB)}, ${threat.distance} miss distance, ${threat.velocity} relative velocity`}
+              />
+            )
+          })}
+
+          <div className="ds-chart-legend">
+            {['CRITICAL', 'HIGH', 'MODERATE', 'LOW'].map((level) => (
+              <span key={level}>
+                <i className={level.toLowerCase()} />
+                {severityLabel(level)}
+              </span>
+            ))}
+          </div>
+        </div>
+      </article>
+    </section>
+  )
+}
+
+function TelemetryView() {
+  return (
+    <section className="ds-view-shell">
+      <article className="ds-analysis-panel ds-telemetry-state">
+        <div className="ds-telemetry-icon">
+          <Gauge size={22} />
+        </div>
+        <span className="ds-eyebrow">TELEMETRY</span>
+        <h2>Telemetry view is ready for live data.</h2>
+        <p>
+          The current frontend dataset exposes conjunction and orbital screening
+          values, but it does not provide a live telemetry stream yet. Keeping
+          this state explicit avoids presenting demo values as operational
+          telemetry.
+        </p>
+        <div className="ds-telemetry-note">
+          <Database size={14} />
+          <span>Waiting for a connected telemetry source.</span>
+        </div>
+      </article>
+    </section>
+  )
+}
+
+function RiskDistribution({ detailed = false }) {
+  const visibleLevels = detailed ? RISK_ORDER : ['CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'NORMAL']
+
+  return (
+    <div className={`ds-risk-distribution ${detailed ? 'detailed' : ''}`}>
+      <div className="ds-donut-wrap">
+        <div className="ds-donut">
+          <div>
+            <strong>{OBJECT_COUNT}</strong>
+            <span>OBJECTS</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="ds-risk-list">
+        {visibleLevels.map((level) => {
+          const count = threatCounts[level]
+          const percentage = ((count / OBJECT_COUNT) * 100).toFixed(1)
+          return (
+            <div className="ds-risk-row" key={level}>
+              <span className={`ds-risk-dot ${level.toLowerCase()}`} />
+              <span className="ds-risk-name">{severityLabel(level)}</span>
+              <span className="ds-risk-track">
+                <i
+                  className={level.toLowerCase()}
+                  style={{ width: `${Math.max(Number(percentage), level === 'NORMAL' ? 7 : 0)}%` }}
+                />
+              </span>
+              <strong>{count}</strong>
+              <small>{percentage}%</small>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-/* Risk distribution row */
-function RiskRow({ label, count, tone, total }) {
-  const percentage =
-    total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+function ConcentrationChart() {
+  const points = [
+    { x: 72, y: 25, level: 'critical', label: 'AURORA-7 × DEBRIS-4812' },
+    { x: 48, y: 38, level: 'high', label: 'NOVA-3 × OBJECT-9274' },
+    { x: 35, y: 56, level: 'moderate', label: 'ORBITAL-12 × DEBRIS-3099' },
+    { x: 20, y: 74, level: 'low', label: 'PIONEER-8 × OBJECT-1862' },
+  ]
 
   return (
-    <div className={`risk-row ${tone}`}>
-      <div className="risk-row-label">
-        <span className={`risk-dot ${tone}`} />
-        <span>{label}</span>
-      </div>
+    <div className="ds-concentration-chart" role="img" aria-label="Conjunction concentration overview">
+      <div className="ds-concentration-grid" />
+      <span className="ds-concentration-axis y">HIGHER PRIORITY</span>
+      <span className="ds-concentration-axis x">LOWER PRESSURE</span>
 
-      <strong>{count}</strong>
-      <small>{percentage}%</small>
+      {points.map((point) => (
+        <span
+          key={point.label}
+          className={`ds-concentration-point ${point.level}`}
+          style={{ left: `${point.x}%`, bottom: `${point.y}%` }}
+          title={point.label}
+        />
+      ))}
+
+      <div className="ds-concentration-callout">
+        <span className="ds-eyebrow">HIGHEST PRIORITY</span>
+        <strong>{formatObject(highestRiskThreat.objectA)} × {formatObject(highestRiskThreat.objectB)}</strong>
+        <small>
+          {highestRiskThreat.distance} · {highestRiskThreat.window}
+        </small>
+      </div>
     </div>
   )
 }
 
-/* Insight card */
-function Insight({ number, icon, title, text }) {
-  return (
-    <article className="insight-card">
-      <div className="insight-top">
-        <span className="insight-icon">{icon}</span>
-        <b>{number}</b>
-      </div>
+function ThreatPreviewList({ onSelectThreat, compact = false }) {
+  const threats = compact ? sortedThreats.slice(0, 3) : sortedThreats
 
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </article>
+  return (
+    <div className={`ds-threat-preview-list ${compact ? 'compact' : ''}`}>
+      {threats.map((threat) => (
+        <button
+          type="button"
+          className="ds-threat-preview"
+          key={threat.id}
+          onClick={() => onSelectThreat(threat)}
+        >
+          <span className={`ds-row-severity ${threat.level.toLowerCase()}`} />
+          <span className="ds-threat-preview-main">
+            <strong>
+              {formatObject(threat.objectA)}
+              <span> × </span>
+              {formatObject(threat.objectB)}
+            </strong>
+            <small>{threat.window}</small>
+          </span>
+          <span className={`ds-small-status ${threat.level.toLowerCase()}`}>
+            {severityLabel(threat.level)}
+          </span>
+          <span className="ds-threat-preview-distance">{threat.distance}</span>
+          <ArrowRight size={15} />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ThreatInsightDrawer({ threat, onClose }) {
+  return (
+    <div className="ds-detail-layer">
+      <button
+        type="button"
+        className="ds-detail-backdrop"
+        aria-label="Close data insight"
+        onClick={onClose}
+      />
+
+      <aside className="ds-detail-drawer" aria-label="Selected analytical item">
+        <header className="ds-detail-header">
+          <div>
+            <span className="ds-eyebrow">SELECTED ANALYSIS</span>
+            <p>Conjunction detail</p>
+          </div>
+
+          <button
+            type="button"
+            className="ds-detail-close"
+            onClick={onClose}
+            aria-label="Close selected analysis"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="ds-detail-title">
+          <span className={`ds-detail-icon ${threat.level.toLowerCase()}`}>
+            <BarChart3 size={18} />
+          </span>
+
+          <div>
+            <span className={`ds-detail-level ${threat.level.toLowerCase()}`}>
+              {severityLabel(threat.level)}
+            </span>
+            <h2>
+              {formatObject(threat.objectA)}
+              <span> × </span>
+              {formatObject(threat.objectB)}
+            </h2>
+            <p>
+              Supporting analytical context for the selected conjunction.
+            </p>
+          </div>
+        </div>
+
+        <div className="ds-detail-summary">
+          <div>
+            <span>Miss distance</span>
+            <strong>{threat.distance}</strong>
+          </div>
+          <div>
+            <span>Relative velocity</span>
+            <strong>{threat.velocity}</strong>
+          </div>
+          <div>
+            <span>Time to TCA</span>
+            <strong>{threat.window.replace('TCA ', '')}</strong>
+          </div>
+        </div>
+
+        <div className="ds-detail-note">
+          <Sparkles size={14} />
+          <p>
+            This analytical view summarizes the current demo dataset. It does
+            not represent a live operational telemetry stream.
+          </p>
+        </div>
+
+        <div className="ds-detail-actions">
+          <Link to="/track" className="ds-detail-action primary">
+            <Database size={14} />
+            View object
+            <ArrowRight size={14} />
+          </Link>
+          <Link to="/risk" className="ds-detail-action">
+            <ShieldAlert size={14} />
+            View threat
+            <ArrowRight size={14} />
+          </Link>
+          <Link to="/" className="ds-detail-action">
+            <Radar size={14} />
+            View dashboard
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </aside>
+    </div>
   )
 }
